@@ -6,12 +6,17 @@ import { useEffect, useState } from "react";
 const AvailableMeals = () => {
   const [meals, setMeals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setError] = useState(null);
 
   useEffect(() => {
     const fetchMeals = async () => {
       const response = await fetch(
         "https://react-complete-guide-6101-default-rtdb.asia-southeast1.firebasedatabase.app/meals.json"
       );
+
+      if (!response.ok) {
+        setError(true);
+      }
       const data = await response.json();
 
       const loadMeals = [];
@@ -29,8 +34,12 @@ const AvailableMeals = () => {
       setIsLoading(false);
     };
 
-    fetchMeals();
+    fetchMeals().catch((error) => {
+      setIsLoading(false);
+      setError(error.message);
+    });
   }, []);
+  const mealsList = meals.map((meal) => <MealItem key={meal.id} meal={meal} />);
 
   if (isLoading) {
     return (
@@ -40,7 +49,14 @@ const AvailableMeals = () => {
     );
   }
 
-  const mealsList = meals.map((meal) => <MealItem key={meal.id} meal={meal} />);
+  if (isError) {
+    return (
+      <section className={classes.MealsError}>
+        <p>{isError}</p>
+      </section>
+    );
+  }
+
   return (
     <section className={classes.meals}>
       <Card>
