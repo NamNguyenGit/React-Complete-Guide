@@ -5,9 +5,10 @@ import CartContext from "../../store/cart-context";
 import CartItem from "./CartItem";
 import CheckOut from "./CheckOut";
 
-const Cart = ({ onClose }) => {
+const Cart = ({onClose}) => {
   const [isCheckOut, setIsCheckOut] = useState(false);
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [didSubmit, setDidSubmit] = useState(false);
   const cartCtx = useContext(CartContext);
 
   const totalAmount = `$${cartCtx.totalAmount.toFixed(2)}`;
@@ -26,15 +27,22 @@ const Cart = ({ onClose }) => {
     setIsCheckOut(true);
   };
 
-  const submitOrderHandler = (userData) => {
-    fetch('https://react-complete-guide-6101-default-rtdb.asia-southeast1.firebasedatabase.app/orders.json',{
-      method: 'POST',
-      body: JSON.stringify({
-        user:userData,
-        orderedItems: cartCtx.items
-      })
-    })
-  }
+  const submitOrderHandler = async (userData) => {
+    setIsSubmitting(true);
+    await fetch(
+      "https://react-complete-guide-6101-default-rtdb.asia-southeast1.firebasedatabase.app/orders.json",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          user: userData,
+          orderedItems: cartCtx.items,
+        }),
+      }
+    );
+    setIsSubmitting(false);
+    setDidSubmit(true);
+    cartCtx.clearCart()
+  };
 
   const modelActions = (
     <div className={classes.actions}>
@@ -47,7 +55,7 @@ const Cart = ({ onClose }) => {
         </button>
       )}
     </div>
-  );
+  )
 
   const cartItems = (
     <ul className={classes["cart-items"]}>
@@ -63,16 +71,38 @@ const Cart = ({ onClose }) => {
       ))}
     </ul>
   );
+
+  const cartModelContent = (
+    <>
+      {cartItems}
+      <div className={classes.total}>
+        <span>Total Amount</span>
+        <span>{totalAmount}</span>
+      </div>
+      {isCheckOut && (
+        <CheckOut onConfirm={submitOrderHandler} onCancel={onClose} />
+      )}
+      {!isCheckOut && modelActions}
+    </>
+  );
+
+  const isSubmittingModalContent = <p> Sending order data...</p>;
+  const didSubmitModelContent =
+  <>
+  <p>Successfully sent the order!</p>
+  <div className={classes.actions}>
+      <button onClick={onClose} className={classes.button}  >
+        Close
+      </button>
+    </div>
+  </>
+  
   return (
     <>
       <Modal onClose={onClose}>
-        {cartItems}
-        <div className={classes.total}>
-          <span>Total Amount</span>
-          <span>{totalAmount}</span>
-        </div>
-        {isCheckOut && <CheckOut onConfirm={submitOrderHandler} onCancel={onClose} />}
-        {!isCheckOut && modelActions}
+        {!isSubmitting && !didSubmit && cartModelContent}
+        {isSubmitting && isSubmittingModalContent}
+        {!isSubmitting && didSubmit && didSubmitModelContent}
       </Modal>
     </>
   );
